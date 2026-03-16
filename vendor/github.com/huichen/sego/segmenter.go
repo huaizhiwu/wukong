@@ -86,7 +86,7 @@ func (seg *Segmenter) LoadDictionary(files string) {
 
 			// 将分词添加到字典中
 			words := splitTextToWords([]byte(text))
-			token := Token{text: words, frequency: frequency, pos: pos}
+			token := Token{text: words, frequency: frequency, pos: pos, computed: false}
 			seg.dict.addToken(token)
 		}
 	}
@@ -120,6 +120,12 @@ func (seg *Segmenter) LoadDictionary(files string) {
 				iSegmentsToAdd++
 			}
 		}
+	}
+
+	// For each dictionary token, keep an array of all other dictionary tokens that are substrings of this token.
+	for i := range seg.dict.tokens {
+		token := &seg.dict.tokens[i]
+		token.AddDictTokens()
 	}
 
 	log.Println("sego词典载入完毕")

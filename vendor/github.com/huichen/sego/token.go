@@ -24,6 +24,10 @@ type Token struct {
 
 	// 该分词文本的进一步分词划分，见Segments函数注释。
 	segments []*Segment
+
+	// All other dictionary tokens that are substrings of this token.
+	computed bool
+	dictTokens []*Token
 }
 
 // 返回分词文本
@@ -47,6 +51,48 @@ func (token *Token) Pos() string {
 // 用于搜索引擎对一段文本进行全文搜索。
 func (token *Token) Segments() []*Segment {
 	return token.segments
+}
+
+func (token *Token) DictTokens() []*Token {
+	return token.dictTokens
+}
+
+// Recursively add all other dictionary tokens that are substrings of this token.
+func (token *Token) AddDictTokens() {
+	if token.computed {
+		return
+	}
+	numDictTokens := 0
+	for _, seg := range token.segments {
+		t := seg.Token()
+		// 过滤频率太小的词
+		if t.frequency < minTokenFrequency {	// fake token
+			continue
+		}
+		if !t.computed {
+			t.AddDictTokens()
+		}
+		numDictTokens ++	// add t itself which is a token in the dictionary
+		numDictTokens += len(t.dictTokens)	// recursively add t's own dictTokens
+	}
+	if numDictTokens > 0 {
+		token.dictTokens = make([]*Token, numDictTokens)
+		tokenId := 0
+		for _, seg := range token.segments {
+			t := seg.Token()
+			// 过滤频率太小的词
+			if t.frequency < minTokenFrequency {	// fake token
+				continue
+			}
+			token.dictTokens[tokenId] = t
+			tokenId ++
+			if len(t.dictTokens) > 0 {
+				copy(token.dictTokens[tokenId:tokenId+len(t.dictTokens)], t.dictTokens)
+				tokenId += len(t.dictTokens)
+			}
+		}
+	}
+	token.computed = true
 }
 
 func (token *Token) TextEquals(string string) bool {

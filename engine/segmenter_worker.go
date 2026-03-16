@@ -30,9 +30,14 @@ func (engine *Engine) segmenterWorker() {
 			// 当文档正文不为空时，优先从内容分词中得到关键词
 			segments := engine.segmenter.Segment([]byte(request.data.Content))
 			for _, segment := range segments {
-				token := segment.Token().Text()
-				if !engine.stopTokens.IsStopToken(token) {
-					tokensMap[token] = append(tokensMap[token], segment.Start())
+				//token := segment.Token().Text()
+				token := segment.Token()
+				if !engine.stopTokens.IsStopToken(token.Text()) {
+					tokensMap[token.Text()] = append(tokensMap[token.Text()], segment.Start())
+					// Add all other tokens in the dictionary that are substrings of this token
+					for _, dt := range token.DictTokens() {
+						tokensMap[dt.Text()] = append(tokensMap[dt.Text()], segment.Start())
+					}
 				}
 			}
 			numTokens = len(segments)
