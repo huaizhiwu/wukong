@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"sync/atomic"
 	"time"
+	"strings"
 
 	"github.com/huichen/murmur"
 	"github.com/huichen/sego"
@@ -325,11 +326,15 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 	// 收集关键词
 	tokens := []string{}
 	if request.Text != "" && engine.segmenter != nil {
-		querySegments := engine.segmenter.Segment([]byte(request.Text))
-		for _, s := range querySegments {
-			token := s.Token().Text()
-			if engine.stopTokens != nil && !engine.stopTokens.IsStopToken(token) {
-				tokens = append(tokens, s.Token().Text())
+		terms := strings.Split(request.Text, " ")
+		for _, term := range terms {
+			//querySegments := engine.segmenter.Segment([]byte(request.Text))
+			querySegments := engine.segmenter.Segment([]byte(term))
+			for _, s := range querySegments {
+				token := s.Token().Text()
+				if engine.stopTokens != nil && !engine.stopTokens.IsStopToken(token) {
+					tokens = append(tokens, s.Token().Text())
+				}
 			}
 		}
 	} else {
