@@ -39,14 +39,17 @@ func (engine *Engine) segmenterWorker() {
 					}
 					//tokensMap[token.Text()] = append(tokensMap[token.Text()], segment.Start())
 					tokensMap[text] = append(tokensMap[text], segment.Start())
-					// Add all other tokens in the dictionary that are substrings of this token
-					for _, dt := range token.DictTokens() {
-						text = dt.Text()
-						if dt.Alias() != nil {
-							text = dt.Alias().Text()  // Map to the canonical alias of the token text
+
+					if !engine.initOptions.NoRecursiveTokens {
+						// Add all other tokens in the dictionary that are substrings of this token
+						for _, dt := range token.DictTokens() {
+							text = dt.Text()
+							if dt.Alias() != nil {
+								text = dt.Alias().Text()  // Map to the canonical alias of the token text
+							}
+							//tokensMap[dt.Text()] = append(tokensMap[dt.Text()], segment.Start())
+							tokensMap[text] = append(tokensMap[text], segment.Start())
 						}
-						//tokensMap[dt.Text()] = append(tokensMap[dt.Text()], segment.Start())
-						tokensMap[text] = append(tokensMap[text], segment.Start())
 					}
 				}
 			}
