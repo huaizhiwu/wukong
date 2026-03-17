@@ -33,10 +33,20 @@ func (engine *Engine) segmenterWorker() {
 				//token := segment.Token().Text()
 				token := segment.Token()
 				if !engine.stopTokens.IsStopToken(token.Text()) {
-					tokensMap[token.Text()] = append(tokensMap[token.Text()], segment.Start())
+					text := token.Text()
+					if token.Alias() != nil {
+						text = token.Alias().Text()  // Map to the canonical alias of the token text
+					}
+					//tokensMap[token.Text()] = append(tokensMap[token.Text()], segment.Start())
+					tokensMap[text] = append(tokensMap[text], segment.Start())
 					// Add all other tokens in the dictionary that are substrings of this token
 					for _, dt := range token.DictTokens() {
-						tokensMap[dt.Text()] = append(tokensMap[dt.Text()], segment.Start())
+						text = dt.Text()
+						if dt.Alias() != nil {
+							text = dt.Alias().Text()  // Map to the canonical alias of the token text
+						}
+						//tokensMap[dt.Text()] = append(tokensMap[dt.Text()], segment.Start())
+						tokensMap[text] = append(tokensMap[text], segment.Start())
 					}
 				}
 			}

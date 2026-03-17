@@ -43,6 +43,7 @@ type Engine struct {
 	rankers                 []*core.Ranker
 	segmenter               *sego.Segmenter
 	usingExternalSegmenter  bool
+	tokenAliases            *sego.TokenAliases
 	stopTokens              *types.StopTokens
 	usingExternalStopTokens bool
 	dbs                     []storage.Storage
@@ -76,13 +77,17 @@ func (engine *Engine) Init(options types.EngineInitOptions) {
 	engine.initialized = true
 
 	if !options.NotUsingSegmenter {
+		// 初始化同义词
+		engine.tokenAliases = &sego.TokenAliases{}
+		engine.tokenAliases.Init(options.AliasFile)
+
 		// 载入分词器词典
 		if options.Segmenter != nil {
 			engine.segmenter = options.Segmenter
 			engine.usingExternalSegmenter = true
 		} else {
 			engine.segmenter = &sego.Segmenter{}
-			engine.segmenter.LoadDictionary(options.SegmenterDictionaries)
+			engine.segmenter.LoadDictionary(options.SegmenterDictionaries, engine.tokenAliases)
 			engine.usingExternalSegmenter = false
 		}
 
@@ -332,8 +337,11 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 			querySegments := engine.segmenter.Segment([]byte(term))
 			for _, s := range querySegments {
 				token := s.Token().Text()
+				if s.Token().Alias() != nil {
+					token = s.Token().Alias().Text()
+				}
 				if engine.stopTokens != nil && !engine.stopTokens.IsStopToken(token) {
-					tokens = append(tokens, s.Token().Text())
+					tokens = append(tokens, token)
 				}
 			}
 		}
@@ -452,6 +460,10 @@ func (engine *Engine) Close() {
 
 	if !engine.usingExternalSegmenter && engine.segmenter != nil {
 		engine.segmenter.Close()
+	}
+
+	if engine.tokenAliases != nil {
+		engine.tokenAliases.Close()
 	}
 
 	if !engine.usingExternalStopTokens && engine.stopTokens != nil {

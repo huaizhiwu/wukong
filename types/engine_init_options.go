@@ -42,6 +42,9 @@ type EngineInitOptions struct {
 	// sego.Segmenter.LoadDictionary函数的注释
 	SegmenterDictionaries string
 
+	// 同义词文件
+	AliasFile     string
+
 	// 停用词文件，如果为 nil 则尝试从下面的文件载入
 	StopTokens    *StopTokens
 	StopTokenFile string

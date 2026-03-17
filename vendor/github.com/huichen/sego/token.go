@@ -28,6 +28,9 @@ type Token struct {
 	// All other dictionary tokens that are substrings of this token.
 	computed bool
 	dictTokens []*Token
+
+	// The canonical alias for this token
+	alias *Token
 }
 
 // 返回分词文本
@@ -51,6 +54,14 @@ func (token *Token) Pos() string {
 // 用于搜索引擎对一段文本进行全文搜索。
 func (token *Token) Segments() []*Segment {
 	return token.segments
+}
+
+func (token *Token) Alias() *Token {
+	return token.alias
+}
+
+func (token *Token) SetAlias(alias *Token) {
+	token.alias = alias
 }
 
 func (token *Token) DictTokens() []*Token {

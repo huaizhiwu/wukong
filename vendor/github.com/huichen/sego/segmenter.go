@@ -41,7 +41,7 @@ func (seg *Segmenter) Dictionary() *Dictionary {
 //
 // 词典的格式为（每个分词一行）：
 //	分词文本 频率 词性
-func (seg *Segmenter) LoadDictionary(files string) {
+func (seg *Segmenter) LoadDictionary(files string, ta *TokenAliases) {
 	seg.dict = NewDictionary()
 	for _, file := range strings.Split(files, ",") {
 		log.Printf("载入sego词典 %s", file)
@@ -126,6 +126,30 @@ func (seg *Segmenter) LoadDictionary(files string) {
 	for i := range seg.dict.tokens {
 		token := &seg.dict.tokens[i]
 		token.AddDictTokens()
+	}
+
+	// Create an auxiliary map that maps text to a dictionary token
+	// for every dictionary token that appears in the ta.tokenAliases map.
+	// It will be used in the next step.
+	tokenMap := make(map[string]*Token)
+	for i := range seg.dict.tokens {
+		token := &seg.dict.tokens[i]
+		tt := token.Text()
+		if _, found := ta.tokenAliases[tt]; found {
+			tokenMap[tt] = token
+		}
+	}
+
+	// Set alias for tokens which have a canonical alias.
+	for text, alias := range ta.tokenAliases {
+		if text == alias {
+			continue
+		}
+		textToken, found1 := tokenMap[text]
+		aliasToken, found2 := tokenMap[alias]
+		if found1 && found2 {  // The (text, alias) pair are both tokens in in the dictionary
+			textToken.SetAlias(aliasToken)
+		}
 	}
 
 	log.Println("sego词典载入完毕")
