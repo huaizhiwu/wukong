@@ -4,13 +4,13 @@
 package main
 
 import (
-  "fmt"
-  "flag"
+	"fmt"
+	"flag"
 	"log"
-  "strconv"
-  "strings"
+	"strconv"
+	"strings"
 	"os"
-  "encoding/csv"
+	"encoding/csv"
 
 	"github.com/huichen/wukong/engine"
 	"github.com/huichen/wukong/types"
@@ -20,7 +20,7 @@ var (
 	// searcher是线程安全的
 	searcher = engine.Engine{}
 
-	options  = types.RankOptions{
+	options	= types.RankOptions{
 		ScoringCriteria: RankByLPQ{},
 	}
 	LPQWeight float32
@@ -41,7 +41,7 @@ func (criteria RankByLPQ) Score(doc types.IndexedDocument, fields interface{}) [
 }
 
 func main() {
-  // Define flags: name, default value, and description
+	// Define flags: name, default value, and description
 	keyword := flag.String("key", "百度中国", "Search Keyword")
 	docCSV := flag.String("doc", "doc.csv", "CSV file for documents")
 	dictFile := flag.String("dict", "dictionary.txt", "Dictionary file")
@@ -54,47 +54,47 @@ func main() {
 	LPQWeight = float32(*float64LPQWeight)
 
 	// Dictionary files
-  files := strings.Split(*dictFile, ",")
-  for i, file := range files {
-    files[i] = fmt.Sprintf("../../data/%s", file)
-  }
+	files := strings.Split(*dictFile, ",")
+	for i, file := range files {
+		files[i] = fmt.Sprintf("../../data/%s", file)
+	}
 
 	// 初始化
 	searcher.Init(types.EngineInitOptions{
 		SegmenterDictionaries: strings.Join(files, ","),
 		DefaultRankOptions: &options,
-  })
+	})
 	defer searcher.Close()
 
-  // Read documents from a CSV file
-  csvFile, err := os.Open(*docCSV)
-  if err != nil {
-    panic(err)
-  }
-  defer csvFile.Close()
+	// Read documents from a CSV file
+	csvFile, err := os.Open(*docCSV)
+	if err != nil {
+		panic(err)
+	}
+	defer csvFile.Close()
 
-  csvReader := csv.NewReader(csvFile)
-  rows, err := csvReader.ReadAll() // `rows` is of type [][]string
-  if err != nil {
-    panic(err)
-  }
+	csvReader := csv.NewReader(csvFile)
+	rows, err := csvReader.ReadAll() // `rows` is of type [][]string
+	if err != nil {
+		panic(err)
+	}
 
 	// 将文档加入索引，docId 从1开始
-  for i, row := range rows {
-    //fmt.Println(row[0], row[1])
-    float64LPQ, err := strconv.ParseFloat(row[2], 32)
-    if err != nil {
-      float64LPQ = 0
-    }
-    searcher.IndexDocument(
-      uint64(i+1),  // docId
-      types.DocumentIndexData{
-        Content: row[0],
-        Labels: strings.Split(row[1], ";"),
-        Fields: LPQFields{LPQ: float32(float64LPQ),},
-      },
-      false)
-  }
+	for i, row := range rows {
+		//fmt.Println(row[0], row[1])
+		float64LPQ, err := strconv.ParseFloat(row[2], 32)
+		if err != nil {
+			float64LPQ = 0
+		}
+		searcher.IndexDocument(
+			uint64(i+1),	// docId
+			types.DocumentIndexData{
+				Content: row[0],
+				Labels: strings.Split(row[1], ";"),
+				Fields: LPQFields{LPQ: float32(float64LPQ),},
+			},
+			false)
+	}
 
 	// 等待索引刷新完毕
 	searcher.FlushIndex()
